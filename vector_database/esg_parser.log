@@ -1,0 +1,21 @@
+2025-07-26 15:14:04,214 - parse_pdf - INFO - Found 1 PDF files to process
+2025-07-26 15:14:04,223 - parse_pdf - INFO - Processing PDF: PE-43-2024-INIT_en.pdf
+2025-07-26 15:14:04,462 - parse_pdf - INFO - Successfully extracted 186161 characters from PE-43-2024-INIT_en.pdf
+2025-07-26 15:14:04,464 - parse_pdf - INFO - Saved text to: docs/PE-43-2024-INIT_en.txt
+2025-07-26 15:14:04,464 - parse_pdf - INFO - Processing complete: 1 successful, 0 failed
+2025-07-26 15:14:04,464 - vector_database - INFO - 🚀 Starting ESG FAISS Vector Database Pipeline
+2025-07-26 15:14:04,464 - vector_database - INFO - Loading embedding model: all-MiniLM-L6-v2
+2025-07-26 15:14:07,618 - vector_database - INFO - ✅ Embedding model loaded successfully
+2025-07-26 15:14:07,619 - vector_database - INFO - Found 1 text files to process
+2025-07-26 15:14:07,683 - vector_database - INFO - ✅ Processed PE-43-2024-INIT_en.txt: 471 chunks
+2025-07-26 15:14:07,683 - vector_database - INFO - 🎉 Processing complete: 471 total chunks from 1 files
+2025-07-26 15:14:07,683 - vector_database - INFO - Generating embeddings for 471 text chunks...
+2025-07-26 15:14:12,260 - vector_database - INFO - ✅ Generated embeddings with shape: (471, 384)
+2025-07-26 15:14:12,262 - vector_database - INFO - ✅ Created FAISS index with 471 vectors
+2025-07-26 15:14:12,265 - vector_database - INFO - ✅ Index and metadata saved to vectorstore
+2025-07-26 15:14:12,265 - vector_database - INFO - 📊 Database Statistics:
+2025-07-26 15:14:12,265 - vector_database - INFO -    Total chunks: 471
+2025-07-26 15:14:12,266 - vector_database - INFO -    Unique sources: 1
+2025-07-26 15:14:12,266 - vector_database - INFO -    Embedding dimension: 384
+2025-07-26 15:14:12,266 - vector_database - INFO -    Source files: PE-43-2024-INIT_en.txt
+2025-07-26 15:14:12,266 - vector_database - INFO - 🎉 FAISS vector database pipeline completed successfully!
