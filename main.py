@@ -7,7 +7,7 @@ import os
 
 def main():
     """Main entry point for the ESG Report Generation Tool"""
-    print("🌱 ESG Report Generation Tool")
+    print("🌱 SustainPilot 🌱 ")
     print("=" * 50)
     print("Starting the agentic ESG assessment application...")
     print("This tool uses AI agents to provide real-time ESG insights and generate comprehensive reports.")

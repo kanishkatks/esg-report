@@ -6,8 +6,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import os
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
+from mistralai import Mistral
 from src.config import Config
 
 
@@ -22,7 +21,7 @@ class MistralLLMService:
         
         if self.api_key and self.api_key != "":
             try:
-                self.client = MistralClient(api_key=self.api_key)
+                self.client = Mistral(api_key=self.api_key)
                 self.logger.info("Mistral AI client initialized successfully")
             except Exception as e:
                 self.logger.error(f"Failed to initialize Mistral client: {e}")
@@ -40,12 +39,12 @@ class MistralLLMService:
             system_message = self._create_system_message(context)
             
             messages = [
-                ChatMessage(role="system", content=system_message),
-                ChatMessage(role="user", content=prompt)
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt}
             ]
             
             # Make API call to Mistral
-            response = self.client.chat(
+            response = self.client.chat.complete(
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
@@ -72,11 +71,11 @@ class MistralLLMService:
             Focus on compliance with EU directives and provide specific, measurable recommendations."""
             
             messages = [
-                ChatMessage(role="system", content=system_message),
-                ChatMessage(role="user", content=analysis_prompt)
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": analysis_prompt}
             ]
             
-            response = self.client.chat(
+            response = self.client.chat.complete(
                 model=self.model,
                 messages=messages,
                 temperature=0.3,  # Lower temperature for more consistent analysis
@@ -118,11 +117,11 @@ class MistralLLMService:
             Extract relevant ESG information from documents and assess compliance with current EU directives."""
             
             messages = [
-                ChatMessage(role="system", content=system_message),
-                ChatMessage(role="user", content=analysis_prompt)
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": analysis_prompt}
             ]
             
-            response = self.client.chat(
+            response = self.client.chat.complete(
                 model=self.model,
                 messages=messages,
                 temperature=0.2,

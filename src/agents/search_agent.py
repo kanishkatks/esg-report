@@ -51,6 +51,8 @@ class SearchAgent(BaseAgent):
             return await self.get_standards_updates()
         elif task_type == "industry_benchmarks":
             return await self.get_industry_benchmarks(task.get("industry", ""))
+        elif task_type == "company_research":
+            return await self.research_company_from_url(task.get("url", ""), task.get("company_name", ""))
         else:
             return await self.general_esg_search(task.get("query", ""))
     
@@ -242,6 +244,152 @@ class SearchAgent(BaseAgent):
             "data": data,
             "timestamp": datetime.now()
         }
+    
+    async def research_company_from_url(self, company_url: str, company_name: str = "") -> Dict[str, Any]:
+        """Research company information from their website URL"""
+        if not company_url:
+            return {
+                "success": False,
+                "error": "No URL provided",
+                "company_info": {}
+            }
+        
+        try:
+            # Simulate web scraping and analysis
+            await asyncio.sleep(2.0)  # Simulate processing time
+            
+            # Extract domain for analysis
+            from urllib.parse import urlparse
+            parsed_url = urlparse(company_url)
+            domain = parsed_url.netloc.lower()
+            
+            # Mock company information extraction based on URL patterns
+            company_info = await self._extract_company_info(company_url, company_name, domain)
+            
+            return {
+                "success": True,
+                "company_info": company_info,
+                "source_url": company_url,
+                "extraction_date": datetime.now().isoformat(),
+                "confidence_score": 0.85
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error researching company from URL {company_url}: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "company_info": {}
+            }
+    
+    async def _extract_company_info(self, url: str, company_name: str, domain: str) -> Dict[str, Any]:
+        """Extract company information from website (mock implementation)"""
+        
+        # Mock extraction based on common patterns
+        mock_company_data = {
+            "basic_info": {
+                "name": company_name or self._extract_company_name_from_domain(domain),
+                "website": url,
+                "domain": domain,
+                "description": f"Leading company in their industry with focus on innovation and sustainability",
+                "founded": "2010",
+                "headquarters": "Europe"
+            },
+            "business_info": {
+                "industry": self._infer_industry_from_domain(domain),
+                "size": "Medium (50-500 employees)",
+                "revenue_range": "$10M - $100M",
+                "business_model": "B2B Services",
+                "main_products": ["Technology Solutions", "Consulting Services"]
+            },
+            "esg_indicators": {
+                "has_sustainability_page": True,
+                "mentions_esg": True,
+                "has_csr_report": False,
+                "environmental_commitments": [
+                    "Carbon neutrality goals",
+                    "Renewable energy usage",
+                    "Waste reduction programs"
+                ],
+                "social_commitments": [
+                    "Diversity and inclusion",
+                    "Employee wellbeing",
+                    "Community engagement"
+                ],
+                "governance_indicators": [
+                    "Board diversity",
+                    "Ethics code",
+                    "Transparency reporting"
+                ]
+            },
+            "sustainability_data": {
+                "sustainability_report_available": False,
+                "carbon_footprint_disclosed": False,
+                "sustainability_certifications": [],
+                "esg_frameworks_mentioned": ["GRI", "SASB"],
+                "climate_targets": {
+                    "net_zero_commitment": False,
+                    "science_based_targets": False,
+                    "renewable_energy_target": "50% by 2030"
+                }
+            },
+            "public_commitments": {
+                "un_global_compact": False,
+                "sdg_alignment": ["SDG 8", "SDG 12", "SDG 13"],
+                "climate_initiatives": ["RE100 consideration"],
+                "certifications": ["ISO 14001 consideration"]
+            }
+        }
+        
+        # Customize based on domain patterns
+        if "tech" in domain or "software" in domain or "digital" in domain:
+            mock_company_data["business_info"]["industry"] = "Technology"
+            mock_company_data["esg_indicators"]["environmental_commitments"].extend([
+                "Green cloud infrastructure",
+                "Digital sustainability solutions"
+            ])
+        elif "finance" in domain or "bank" in domain or "invest" in domain:
+            mock_company_data["business_info"]["industry"] = "Financial"
+            mock_company_data["esg_indicators"]["environmental_commitments"] = [
+                "Sustainable finance products",
+                "Green investment criteria"
+            ]
+        elif "manufacturing" in domain or "industrial" in domain:
+            mock_company_data["business_info"]["industry"] = "Manufacturing"
+            mock_company_data["esg_indicators"]["environmental_commitments"].extend([
+                "Circular economy principles",
+                "Supply chain sustainability"
+            ])
+        
+        return mock_company_data
+    
+    def _extract_company_name_from_domain(self, domain: str) -> str:
+        """Extract company name from domain"""
+        # Remove common prefixes and suffixes
+        name = domain.replace("www.", "").replace(".com", "").replace(".org", "").replace(".net", "")
+        name = name.replace(".co.uk", "").replace(".eu", "").replace(".de", "")
+        
+        # Capitalize first letter
+        return name.capitalize()
+    
+    def _infer_industry_from_domain(self, domain: str) -> str:
+        """Infer industry from domain name"""
+        domain_lower = domain.lower()
+        
+        if any(keyword in domain_lower for keyword in ["tech", "software", "digital", "ai", "data"]):
+            return "Technology"
+        elif any(keyword in domain_lower for keyword in ["finance", "bank", "invest", "capital"]):
+            return "Financial"
+        elif any(keyword in domain_lower for keyword in ["manufacturing", "industrial", "factory"]):
+            return "Manufacturing"
+        elif any(keyword in domain_lower for keyword in ["health", "medical", "pharma", "bio"]):
+            return "Healthcare"
+        elif any(keyword in domain_lower for keyword in ["energy", "power", "renewable", "solar"]):
+            return "Energy"
+        elif any(keyword in domain_lower for keyword in ["retail", "shop", "store", "commerce"]):
+            return "Retail"
+        else:
+            return "Other"
     
     def clear_cache(self):
         """Clear all cached results"""

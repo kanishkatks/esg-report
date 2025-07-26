@@ -11,6 +11,7 @@ from .base_agent import BaseAgent, get_llm_service
 from .search_agent import SearchAgent
 from .regulations_agent import RegulationsAgent
 from .eu_knowledge_manager import EUKnowledgeManager
+from .conversation_agent import ConversationAgent
 from ..document_processor import document_processor
 
 
@@ -25,6 +26,7 @@ class AgentOrchestrator:
         self.search_agent = SearchAgent(config)
         self.regulations_agent = RegulationsAgent(config)
         self.knowledge_manager = EUKnowledgeManager(config)
+        self.conversation_agent = ConversationAgent(config)
         self.llm_service = get_llm_service()
         self.document_processor = document_processor
         
@@ -32,7 +34,8 @@ class AgentOrchestrator:
         self.agents = {
             "search": self.search_agent,
             "regulations": self.regulations_agent,
-            "knowledge": self.knowledge_manager
+            "knowledge": self.knowledge_manager,
+            "conversation": self.conversation_agent
         }
         
         # Document processing state
@@ -196,6 +199,72 @@ class AgentOrchestrator:
             "processed_at": datetime.now().isoformat()
         }
     
+    async def start_conversation(self, company_info: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Start a conversational ESG assessment"""
+        try:
+            # Initialize conversation with the conversation agent
+            welcome_result = await self.conversation_agent.execute({
+                "type": "start_conversation",
+                "company_info": company_info or {}
+            })
+            
+            return {
+                "message": welcome_result.get("message", "Welcome to your ESG Assessment! Let's start by discussing your company's sustainability practices."),
+                "topic": welcome_result.get("topic", "company_overview"),
+                "conversation_started": welcome_result.get("conversation_started", True),
+                "knowledge_progress": welcome_result.get("knowledge_progress", 0.0)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to start conversation: {str(e)}")
+            return {
+                "message": "Welcome to your ESG Assessment! Let's start by discussing your company's sustainability practices.",
+                "topic": "company_overview",
+                "conversation_started": True,
+                "knowledge_progress": 0.0
+            }
+    
+    async def process_conversation_message(self, user_message: str) -> Dict[str, Any]:
+        """Process a conversation message and return AI response with extracted data"""
+        try:
+            # Process message with conversation agent
+            conversation_result = await self.conversation_agent.execute({
+                "type": "process_message",
+                "message": user_message
+            })
+            
+            # Extract next action information
+            next_action = conversation_result.get("next_action", {})
+            action_type = next_action.get("action", "continue_topic")
+            
+            # Check if ready for report generation
+            ready_for_report = action_type == "ready_for_report"
+            
+            return {
+                "message": conversation_result.get("message", "I understand. Could you tell me more about that aspect of your ESG practices?"),
+                "topic": conversation_result.get("topic", "general"),
+                "progress": conversation_result.get("conversation_progress", 0.1),
+                "complete": ready_for_report,
+                "extracted_data": conversation_result.get("extracted_data", {}),
+                "next_action": next_action,
+                "ready_for_report": ready_for_report,
+                "knowledge_summary": next_action.get("knowledge_summary", {}) if ready_for_report else {}
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to process conversation message: {str(e)}")
+            # Fallback response
+            return {
+                "message": "I understand. Could you tell me more about that aspect of your ESG practices?",
+                "topic": "general",
+                "progress": 0.1,
+                "complete": False,
+                "extracted_data": {},
+                "next_action": {"action": "continue_topic"},
+                "ready_for_report": False,
+                "knowledge_summary": {}
+            }
+    
     def get_processed_documents_summary(self) -> Dict[str, Any]:
         """Get summary of all processed documents"""
         return {
@@ -204,6 +273,59 @@ class AgentOrchestrator:
             "processing_dates": [doc.get("processing_timestamp") for doc in self.processed_documents],
             "insights": self.document_processor.get_document_insights(self.processed_documents)
         }
+    
+    async def research_company_from_url(self, company_url: str, company_name: str = "") -> Dict[str, Any]:
+        """Research company information from URL using search agent"""
+        try:
+            self.logger.info(f"Researching company from URL: {company_url}")
+            
+            # Use search agent to research company
+            research_result = await self.search_agent.execute({
+                "type": "company_research",
+                "url": company_url,
+                "company_name": company_name
+            })
+            
+            return research_result
+            
+        except Exception as e:
+            self.logger.error(f"Failed to research company from URL: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "company_info": {}
+            }
+    
+    def get_conversation_data_for_report(self) -> Dict[str, Any]:
+        """Get conversation data for report generation"""
+        try:
+            conversation_data = self.conversation_agent.get_conversation_data()
+            
+            # Add readiness status
+            readiness_status = self.conversation_agent.get_report_readiness_status()
+            
+            return {
+                **conversation_data,
+                "readiness_status": readiness_status,
+                "processed_documents": self.processed_documents,
+                "document_insights": self.document_processor.get_document_insights(self.processed_documents) if self.processed_documents else {}
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get conversation data: {str(e)}")
+            return {
+                "conversation_history": [],
+                "extracted_data": {},
+                "knowledge_collected": {},
+                "topics_covered": [],
+                "conversation_context": {},
+                "current_topic": None,
+                "completion_percentage": 0,
+                "knowledge_summary": {},
+                "readiness_status": {"ready_for_report": False},
+                "processed_documents": self.processed_documents,
+                "document_insights": {}
+            }
     
     async def generate_esg_insights(self, assessment_data: Dict[str, Any], user_responses: Dict[str, Any]) -> Dict[str, Any]:
         """Generate ESG insights using LLM and agent data"""

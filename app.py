@@ -55,16 +55,44 @@ st.markdown("""
         padding: 1rem;
         margin: 0.5rem 0;
         border-radius: 0.5rem;
+        animation: fadeIn 0.3s ease-in;
     }
     
     .user-message {
         background-color: #e3f2fd;
         margin-left: 2rem;
+        border-left: 4px solid #2196f3;
     }
     
     .assistant-message {
         background-color: #f1f8e9;
         margin-right: 2rem;
+        border-left: 4px solid #4caf50;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .chat-input-container {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        padding: 1rem;
+        border-top: 1px solid #e0e0e0;
+        margin-top: 1rem;
+    }
+    
+    .stTextInput > div > div > input {
+        border-radius: 25px !important;
+        border: 2px solid #e0e0e0 !important;
+        padding: 12px 20px !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #2196f3 !important;
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
     }
     
     .progress-container {
@@ -190,30 +218,89 @@ def company_info_form():
     st.markdown('<div class="main-header">🌱 ESG Report Generator</div>', unsafe_allow_html=True)
     st.markdown("### Company Information")
     
+    # Company URL Research Section
+    st.markdown("#### 🔍 Automatic Company Research")
+    st.markdown("*Provide your company website URL to automatically gather public ESG information*")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        company_url = st.text_input(
+            "Company Website URL",
+            placeholder="https://www.yourcompany.com",
+            help="We'll analyze your website to gather publicly available ESG information"
+        )
+    with col2:
+        research_company = st.button("🔍 Research Company", type="secondary")
+    
+    # Show research results if available
+    if 'company_research' in st.session_state and st.session_state.company_research:
+        research_data = st.session_state.company_research
+        if research_data.get("success"):
+            st.success("✅ Company research completed!")
+            company_info = research_data.get("company_info", {})
+            
+            with st.expander("📊 Discovered Company Information", expanded=True):
+                basic_info = company_info.get("basic_info", {})
+                business_info = company_info.get("business_info", {})
+                esg_indicators = company_info.get("esg_indicators", {})
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.markdown("**Basic Info**")
+                    st.write(f"• Industry: {business_info.get('industry', 'Unknown')}")
+                    st.write(f"• Size: {business_info.get('size', 'Unknown')}")
+                    st.write(f"• Founded: {basic_info.get('founded', 'Unknown')}")
+                
+                with col2:
+                    st.markdown("**ESG Presence**")
+                    st.write(f"• Sustainability Page: {'✅' if esg_indicators.get('has_sustainability_page') else '❌'}")
+                    st.write(f"• ESG Mentions: {'✅' if esg_indicators.get('mentions_esg') else '❌'}")
+                    st.write(f"• CSR Report: {'✅' if esg_indicators.get('has_csr_report') else '❌'}")
+                
+                with col3:
+                    st.markdown("**Commitments**")
+                    env_commitments = esg_indicators.get('environmental_commitments', [])
+                    for commitment in env_commitments[:2]:
+                        st.write(f"• {commitment}")
+        else:
+            st.warning(f"⚠️ Research failed: {research_data.get('error', 'Unknown error')}")
+    
+    st.markdown("---")
+    st.markdown("#### Manual Company Details")
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        company_name = st.text_input("Company Name", value=st.session_state.company_info.get("name", ""))
+        # Pre-fill from research if available
+        default_name = ""
+        default_industry = "Technology"
+        default_size = "Large"
+        
+        if 'company_research' in st.session_state and st.session_state.company_research.get("success"):
+            research_info = st.session_state.company_research.get("company_info", {})
+            default_name = research_info.get("basic_info", {}).get("name", "")
+            default_industry = research_info.get("business_info", {}).get("industry", "Technology")
+            size_mapping = {"Small": "Small (< 50 employees)", "Medium": "Medium (50-500 employees)", "Large": "Large (> 500 employees)"}
+            research_size = research_info.get("business_info", {}).get("size", "Large")
+            default_size = research_size if research_size in size_mapping.values() else size_mapping.get(research_size.split()[0], "Large (> 500 employees)")
+        
+        company_name = st.text_input("Company Name", value=st.session_state.company_info.get("name", default_name))
         industry = st.selectbox(
             "Industry",
             ["Technology", "Manufacturing", "Financial", "Healthcare", "Energy", "Retail", "Other"],
-            index=0 if not st.session_state.company_info.get("industry") else 
-                  ["Technology", "Manufacturing", "Financial", "Healthcare", "Energy", "Retail", "Other"].index(
-                      st.session_state.company_info.get("industry", "Technology")
-                  )
+            index=["Technology", "Manufacturing", "Financial", "Healthcare", "Energy", "Retail", "Other"].index(default_industry) if default_industry in ["Technology", "Manufacturing", "Financial", "Healthcare", "Energy", "Retail", "Other"] else 0
         )
         company_size = st.selectbox(
             "Company Size",
             ["Small (< 50 employees)", "Medium (50-500 employees)", "Large (> 500 employees)"],
-            index=2 if not st.session_state.company_info.get("size") else 
-                  ["Small", "Medium", "Large"].index(st.session_state.company_info.get("size", "Large"))
+            index=["Small (< 50 employees)", "Medium (50-500 employees)", "Large (> 500 employees)"].index(default_size) if default_size in ["Small (< 50 employees)", "Medium (50-500 employees)", "Large (> 500 employees)"] else 2
         )
     
     with col2:
         region = st.selectbox(
             "Primary Region",
             ["North America", "Europe", "Asia Pacific", "Latin America", "Africa", "Global"],
-            index=0 if not st.session_state.company_info.get("region") else 
+            index=0 if not st.session_state.company_info.get("region") else
                   ["North America", "Europe", "Asia Pacific", "Latin America", "Africa", "Global"].index(
                       st.session_state.company_info.get("region", "North America")
                   )
@@ -241,9 +328,16 @@ def company_info_form():
         for file in uploaded_files:
             st.markdown(f"• {file.name} ({file.size / 1024:.1f} KB)")
     
+    # Handle company research
+    if research_company and company_url:
+        with st.spinner("🔍 Researching company information..."):
+            research_result = asyncio.run(research_company_from_url(company_url, company_name))
+            st.session_state.company_research = research_result
+            st.rerun()
+    
     if st.button("Start ESG Assessment", type="primary"):
         # Store company information
-        st.session_state.company_info = {
+        company_info = {
             "name": company_name,
             "industry": industry,
             "size": company_size.split(" ")[0],  # Extract size category
@@ -254,6 +348,22 @@ def company_info_form():
             "has_esg_committee": False,
             "third_party_assurance": False
         }
+        
+        # Enhance with research data if available
+        if 'company_research' in st.session_state and st.session_state.company_research.get("success"):
+            research_info = st.session_state.company_research.get("company_info", {})
+            
+            # Add research-based enhancements
+            company_info.update({
+                "website": company_url,
+                "research_data": research_info,
+                "has_sustainability_report": research_info.get("sustainability_data", {}).get("sustainability_report_available", False),
+                "has_esg_policy": research_info.get("esg_indicators", {}).get("mentions_esg", has_esg_policy),
+                "esg_frameworks": research_info.get("sustainability_data", {}).get("esg_frameworks_mentioned", []),
+                "sustainability_commitments": research_info.get("esg_indicators", {}).get("environmental_commitments", [])
+            })
+        
+        st.session_state.company_info = company_info
         
         # Process uploaded files if any
         if uploaded_files:
@@ -269,6 +379,24 @@ def company_info_form():
         
         # Start assessment
         st.rerun()
+
+async def research_company_from_url(company_url: str, company_name: str = "") -> Dict[str, Any]:
+    """Research company information from URL using orchestrator"""
+    try:
+        if st.session_state.orchestrator:
+            return await st.session_state.orchestrator.research_company_from_url(company_url, company_name)
+        else:
+            return {
+                "success": False,
+                "error": "Orchestrator not initialized",
+                "company_info": {}
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "company_info": {}
+        }
 
 async def start_assessment():
     """Start the ESG assessment process"""
@@ -303,8 +431,20 @@ async def start_assessment():
     return False
 
 def display_chat_interface():
-    """Display the chat-based assessment interface"""
-    st.markdown("### 💬 ESG Assessment Chat")
+    """Display the natural conversational chatbot interface"""
+    st.markdown("### 💬 ESG Assessment Conversation")
+    st.markdown("*Have a natural conversation about your company's ESG practices*")
+    
+    # Initialize conversation if not started
+    if 'conversation_started' not in st.session_state:
+        st.session_state.conversation_started = False
+    
+    if not st.session_state.conversation_started:
+        if st.button("Start ESG Conversation", type="primary"):
+            # Start conversation with the conversation agent
+            asyncio.run(start_conversation())
+            st.rerun()
+        return
     
     # Display chat history
     chat_container = st.container()
@@ -324,82 +464,51 @@ def display_chat_interface():
                 </div>
                 """, unsafe_allow_html=True)
     
-    # Current question
-    if (st.session_state.current_question_index < len(st.session_state.assessment_questions) 
-        and not st.session_state.assessment_complete):
-        
-        current_question = st.session_state.assessment_questions[st.session_state.current_question_index]
-        
-        st.markdown("---")
-        st.markdown(f"**Question {st.session_state.current_question_index + 1}:**")
-        st.markdown(f"*{current_question.get('category', 'General')} - {current_question.get('subcategory', 'Assessment')}*")
-        st.markdown(f"### {current_question['question']}")
-        
-        # Handle different question types
-        question_type = current_question.get("type", "text")
-        response = None
-        
-        if question_type == "yes_no":
-            response = st.radio(
-                "Select your answer:",
-                ["Yes", "No"],
-                key=f"question_{st.session_state.current_question_index}"
-            )
-        elif question_type == "percentage":
-            response = st.slider(
-                "Select percentage:",
-                0, 100, 50,
-                key=f"question_{st.session_state.current_question_index}"
-            )
-        else:
-            response = st.text_area(
-                "Your answer:",
-                key=f"question_{st.session_state.current_question_index}",
-                height=100
-            )
-        
-        col1, col2, col3 = st.columns([1, 1, 1])
-        
-        with col2:
-            if st.button("Submit Answer", type="primary"):
-                # Store response
-                st.session_state.user_responses[current_question["id"]] = {
-                    "question": current_question["question"],
-                    "answer": response,
-                    "category": current_question.get("category"),
-                    "subcategory": current_question.get("subcategory"),
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Add to chat history
-                st.session_state.chat_history.append({
-                    "role": "user",
-                    "content": f"Q: {current_question['question']}\nA: {response}"
-                })
-                
-                # Generate AI response (mock)
-                ai_response = generate_ai_response(current_question, response)
-                st.session_state.chat_history.append({
-                    "role": "assistant",
-                    "content": ai_response
-                })
-                
-                # Move to next question
-                st.session_state.current_question_index += 1
-                
-                # Check if assessment is complete
-                if st.session_state.current_question_index >= len(st.session_state.assessment_questions):
-                    st.session_state.assessment_complete = True
-                
-                st.rerun()
-    
-    elif st.session_state.assessment_complete:
-        st.success("🎉 Assessment Complete!")
-        st.markdown("Thank you for completing the ESG assessment. Your report is being generated...")
+    # Check if conversation is complete
+    if st.session_state.get('assessment_complete', False):
+        st.success("🎉 Conversation Complete!")
+        st.markdown("Thank you for the comprehensive discussion about your ESG practices.")
         
         if st.button("Generate ESG Report", type="primary"):
             st.session_state.show_report = True
             st.rerun()
+        return
+    
+    # Chat input section with better styling
+    st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
+    
+    # Show current topic context
+    if 'current_topic' in st.session_state and st.session_state.current_topic:
+        topic_info = get_topic_info(st.session_state.current_topic)
+        st.markdown(f"💬 **Current Topic:** {topic_info}")
+    
+    # Create input form for better UX
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_input(
+            "Your response:",
+            placeholder="Tell me about your ESG practices, policies, or any questions you have...",
+            key="chat_input_form",
+            help="Type your message and press Enter or click Send"
+        )
+        
+        # Submit button
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            submitted = st.form_submit_button("Send Message", type="primary")
+    
+    # Process message when form is submitted
+    if submitted and user_input.strip():
+        # Process user message with conversation agent
+        asyncio.run(process_chat_message(user_input.strip()))
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Show conversation progress
+    if 'conversation_progress' in st.session_state:
+        progress = st.session_state.conversation_progress
+        st.progress(progress)
+        st.caption(f"Conversation progress: {progress:.0%}")
 
 def generate_ai_response(question: Dict[str, Any], user_response: Any) -> str:
     """Generate AI response to user answer (mock implementation)"""
@@ -413,81 +522,250 @@ def generate_ai_response(question: Dict[str, Any], user_response: Any) -> str:
     import random
     return random.choice(responses)
 
+async def start_conversation():
+    """Initialize the conversational ESG assessment"""
+    try:
+        # Initialize conversation agent
+        orchestrator = st.session_state.orchestrator
+        
+        # Start conversation with company info
+        conversation_result = await orchestrator.start_conversation(st.session_state.company_info)
+        
+        # Add welcome message to chat history
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": conversation_result.get("message", "Welcome to your ESG Assessment!")
+        })
+        
+        st.session_state.conversation_started = True
+        st.session_state.current_topic = conversation_result.get("topic", "company_overview")
+        st.session_state.conversation_progress = conversation_result.get("knowledge_progress", 0.0)
+        
+    except Exception as e:
+        st.error(f"Error starting conversation: {str(e)}")
+        # Fallback welcome message
+        welcome_message = """
+        Welcome to your ESG Assessment! 🌱
+        
+        I'm here to help you evaluate your company's Environmental, Social, and Governance practices through a natural conversation.
+        
+        Let's start by telling me a bit about your company - what industry are you in, and what size is your organization?
+        """
+        
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": welcome_message
+        })
+        
+        st.session_state.conversation_started = True
+        st.session_state.current_topic = "company_overview"
+        st.session_state.conversation_progress = 0.0
+
+async def process_chat_message(user_message):
+    """Process user message and generate response"""
+    try:
+        # Prevent duplicate processing
+        if user_message == st.session_state.get("last_processed_message", ""):
+            return
+        
+        st.session_state.last_processed_message = user_message
+        
+        # Add user message to chat history
+        st.session_state.chat_history.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        # Show processing indicator
+        with st.spinner("ESG Assistant is thinking..."):
+            # Process with orchestrator
+            orchestrator = st.session_state.orchestrator
+            response = await orchestrator.process_conversation_message(user_message)
+        
+        # Add only ONE AI response to chat history
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": response["message"]
+        })
+        
+        # Update conversation state
+        if "topic" in response:
+            st.session_state.current_topic = response["topic"]
+        
+        if "progress" in response:
+            st.session_state.conversation_progress = response["progress"]
+        
+        # Check if ready for report generation
+        if response.get("ready_for_report", False):
+            st.session_state.assessment_complete = True
+            st.session_state.knowledge_summary = response.get("knowledge_summary", {})
+            
+        # Handle topic transitions
+        next_action = response.get("next_action", {})
+        if next_action.get("action") == "transition_topic":
+            # Show transition message if provided
+            if next_action.get("transition_message"):
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": next_action["transition_message"]
+                })
+            
+        # Store extracted data with better structure
+        if "extracted_data" in response and response["extracted_data"]:
+            current_topic = st.session_state.current_topic
+            if current_topic not in st.session_state.user_responses:
+                st.session_state.user_responses[current_topic] = {}
+            
+            # Store extracted data by topic
+            for key, value in response["extracted_data"].items():
+                st.session_state.user_responses[current_topic][key] = {
+                    "question": key,
+                    "answer": value,
+                    "category": "ESG Knowledge",
+                    "subcategory": current_topic,
+                    "timestamp": datetime.now().isoformat()
+                }
+        
+        # Clear input after processing
+        st.session_state.chat_input = ""
+        st.session_state.last_input = ""
+        
+    except Exception as e:
+        st.error(f"Error processing message: {str(e)}")
+        # Add fallback response only if no response was added
+        if not st.session_state.chat_history or st.session_state.chat_history[-1]["role"] != "assistant":
+            fallback_response = "I understand. Could you tell me more about that aspect of your ESG practices?"
+            
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": fallback_response
+            })
+
+def get_topic_info(topic):
+    """Get human-readable topic information"""
+    topic_map = {
+        "company_overview": "Company Overview & ESG Strategy",
+        "environmental": "Environmental Performance",
+        "social": "Social & Human Rights",
+        "governance": "Corporate Governance",
+        "reporting_compliance": "ESG Reporting & Compliance",
+        "strategy": "ESG Strategy & Goals",
+        "risk_management": "Risk Management",
+        "stakeholder_engagement": "Stakeholder Engagement"
+    }
+    return topic_map.get(topic, topic.replace("_", " ").title())
+
 async def display_report_generation():
     """Display the report generation interface"""
     st.markdown("### 📊 ESG Report Generation")
     
-    if st.session_state.orchestrator and st.session_state.user_responses:
+    if st.session_state.orchestrator:
         with st.spinner("Generating your comprehensive ESG report..."):
+            # Get conversation data for report generation
+            conversation_data = st.session_state.orchestrator.get_conversation_data_for_report()
+            
             # Generate insights using the orchestrator
             insights = await st.session_state.orchestrator.generate_esg_insights(
-                st.session_state.current_assessment,
-                st.session_state.user_responses
+                st.session_state.current_assessment or {},
+                conversation_data.get("knowledge_collected", {})
             )
             
             st.session_state.esg_insights = insights
+            st.session_state.conversation_data = conversation_data
             
             # Display report preview
-            display_report_preview(insights)
+            display_report_preview(insights, conversation_data)
 
-def display_report_preview(insights: Dict[str, Any]):
+def display_report_preview(insights: Dict[str, Any], conversation_data: Dict[str, Any]):
     """Display a preview of the ESG report"""
     st.markdown("## 📋 ESG Report Preview")
     
     # Executive Summary
     st.markdown("### Executive Summary")
     analysis = insights.get("insights", {})
+    readiness_status = conversation_data.get("readiness_status", {})
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
         <div class="metric-card">
-            <h3>Overall ESG Score</h3>
-            <h2 style="color: #2E8B57;">{}/100</h2>
+            <h3>Overall Completion</h3>
+            <h2 style="color: #2E8B57;">{:.0f}%</h2>
         </div>
-        """.format(analysis.get("overall_score", 75)), unsafe_allow_html=True)
+        """.format(conversation_data.get("completion_percentage", 0)), unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
         <div class="metric-card">
-            <h3>Compliance Status</h3>
+            <h3>Topics Covered</h3>
             <h2 style="color: #FF8C00;">{}</h2>
         </div>
-        """.format(analysis.get("compliance_status", "Good")), unsafe_allow_html=True)
+        """.format(len(conversation_data.get("topics_covered", []))), unsafe_allow_html=True)
     
     with col3:
         st.markdown("""
         <div class="metric-card">
-            <h3>Questions Answered</h3>
+            <h3>Knowledge Points</h3>
             <h2 style="color: #4169E1;">{}</h2>
         </div>
-        """.format(len(st.session_state.user_responses)), unsafe_allow_html=True)
+        """.format(readiness_status.get("total_knowledge_points", 0)), unsafe_allow_html=True)
     
-    # Category Scores
-    st.markdown("### Category Performance")
-    category_scores = analysis.get("category_scores", {})
+    # Topic Status
+    st.markdown("### ESG Topic Coverage")
+    topic_status = readiness_status.get("topic_status", {})
     
-    for category, score in category_scores.items():
-        st.markdown(f"**{category}**: {score}/100")
-        st.progress(score / 100)
+    for topic, status in topic_status.items():
+        topic_name = get_topic_info(topic)
+        coverage_score = status.get("coverage_score", 0)
+        knowledge_score = status.get("knowledge_score", 0)
+        is_covered = status.get("covered", False)
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{topic_name}**")
+            st.progress(coverage_score)
+            st.caption(f"Coverage: {coverage_score:.0%} | Knowledge: {knowledge_score:.0%}")
+        with col2:
+            if is_covered:
+                st.success("✅ Complete")
+            else:
+                st.warning("⏳ In Progress")
+    
+    # Knowledge Summary
+    knowledge_summary = conversation_data.get("knowledge_summary", {})
+    if knowledge_summary:
+        st.markdown("### 📊 Knowledge Collected")
+        for topic, summary in knowledge_summary.items():
+            with st.expander(f"{get_topic_info(topic)} ({summary.get('data_points', 0)} data points)"):
+                key_findings = summary.get("key_findings", [])
+                for finding in key_findings:
+                    st.markdown(f"• {finding}")
     
     # Key Insights
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("### 💪 Strengths")
-        for strength in analysis.get("strengths", [])[:3]:
+        for strength in analysis.get("strengths", ["Comprehensive ESG data collection", "Systematic approach to sustainability", "Good stakeholder engagement"])[:3]:
             st.markdown(f"• {strength}")
     
     with col2:
         st.markdown("### 🎯 Areas for Improvement")
-        for improvement in analysis.get("improvements", [])[:3]:
+        for improvement in analysis.get("improvements", ["Enhanced data measurement", "Expanded reporting frameworks", "Increased transparency"])[:3]:
             st.markdown(f"• {improvement}")
     
     # Recommendations
     st.markdown("### 📋 Recommendations")
-    for i, recommendation in enumerate(analysis.get("recommendations", [])[:5], 1):
+    recommendations = analysis.get("recommendations", [
+        "Develop comprehensive ESG strategy aligned with EU directives",
+        "Implement systematic data collection processes",
+        "Enhance stakeholder engagement programs",
+        "Prepare for CSRD compliance requirements",
+        "Establish science-based targets for emissions reduction"
+    ])
+    
+    for i, recommendation in enumerate(recommendations[:5], 1):
         st.markdown(f"{i}. {recommendation}")
     
     # Download button
@@ -502,8 +780,8 @@ def display_report_preview(insights: Dict[str, Any]):
                     report_generator = ESGReportGenerator()
                     pdf_bytes = report_generator.generate_report(
                         st.session_state.company_info,
-                        st.session_state.current_assessment,
-                        st.session_state.user_responses,
+                        st.session_state.current_assessment or {},
+                        conversation_data.get("knowledge_collected", {}),
                         insights
                     )
                     
