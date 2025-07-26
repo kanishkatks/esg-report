@@ -1,4 +1,4 @@
-# 🌱 ESG Report Generator
+# 🌱 SustainPilot
 
 **Agentic ESG Assessment Tool with Real-time Regulation Updates**
 
