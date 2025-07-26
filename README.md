@@ -7,6 +7,8 @@
 ## Overview
 
 The ESG Report Generator is an intelligent, agentic system that provides comprehensive Environmental, Social, and Governance (ESG) assessments for companies. It uses AI agents to automatically update ESG regulations, search for current best practices, and generate professional PDF reports with actionable insights.
+## Pitch Deck
+Link : https://docs.google.com/presentation/d/1LBZJ8RNSUw8bWk8BNjYvPRkFbOu-uC0Mnd698QcNQPk/edit?usp=sharing
 
 ## 🚀 Key Features
 
