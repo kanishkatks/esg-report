@@ -18,3 +18,6 @@ tqdm==4.66.1
 
 # Data serialization
 pickle5==0.0.12; python_version < '3.8'
+
+# Protobuf compatibility fix for TensorFlow/transformers
+protobuf==3.19.6
