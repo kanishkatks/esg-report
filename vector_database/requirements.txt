@@ -1,0 +1,23 @@
+# PDF processing
+pymupdf==1.23.26
+
+# Vector embeddings and similarity search
+sentence-transformers==2.2.2
+
+# FAISS for vector similarity search
+faiss-cpu==1.7.4
+
+# Machine learning utilities
+scikit-learn==1.3.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Progress bars and utilities
+tqdm==4.66.1
+
+# Data serialization
+pickle5==0.0.12; python_version < '3.8'
+
+# Protobuf compatibility fix for TensorFlow/transformers
+protobuf==3.19.6
